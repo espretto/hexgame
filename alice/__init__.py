@@ -1,14 +1,18 @@
 
-from hexgame import AbstractPlayer, HORIZONTAL, VERTICAL
+from hexgame import AbstractPlayer, HORIZ, VERTI, EMPTY
 import random
 
 class Player (AbstractPlayer):
 
     def play(self, board, direction, **options):
-        print('Je suis ton adversaire, Alice')
+        
+        cols = len(board)
+        rows = len(board[0])
+        x = random.randrange(cols)
+        y = random.randrange(rows)
 
-        x = 1
-        z = 2
-        y = x+z
+        while board[x, y] != EMPTY:
+            x = random.randrange(cols)
+            y = random.randrange(rows)
 
-        return (x, y, z)
+        return (x, y)
