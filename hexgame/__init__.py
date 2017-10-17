@@ -55,6 +55,7 @@ class Game (object):
             # swap player
             player = bob if player == alice else alice
             direction = HORIZ if direction == VERTI else VERTI
+            name = 'horiz' if direction == HORIZ else 'verti'
             
             # let play until timeout
             task = self.loop.run_in_executor(self.executor, player.play, self.board, direction)
@@ -63,24 +64,24 @@ class Game (object):
             try:
                 x, y = self.loop.run_until_complete(future)
             except concurrent.futures.TimeoutError:
-                print(direction, 'lost the game due to timeout')
+                print(name, ' lost the game due to timeout')
                 return
             
             # debug
-            print('%s : (%d,%d)' % ('horiz' if direction == HORIZ else 'verti', x, y))
+            print(name, ' (%d,%d)' % (x, y))
             
             # validation
             tile.x = x
             tile.y = y
             
             if not self.isValid(tile):
-                print(direction, 'lost the game due to false play')
+                print(name, ' lost the game due to false play')
                 return
             
             # modify the board
             self.board[x][y] = direction
         
-        print(direction, 'won the game')
+        print(name, ' won the game')
 
     def isValid (self, tile):
         return self.contains(tile) and self.board[tile.x][tile.y] == EMPTY
@@ -88,7 +89,7 @@ class Game (object):
     def contains (self, tile):
         return 0 <= tile.x < self.cols and 0 <= tile.y < self.rows
 
-    def neighbours (self, tile):
+    def neighbours (self, tile, direction=None):
 
         neighbours = [
             Tile(tile.x+1, tile.y  ),
@@ -99,7 +100,8 @@ class Game (object):
             Tile(tile.x,   tile.y+1)
         ]
 
-        return [tile for tile in neighbours if self.contains(tile)]
+        return [tile for tile in neighbours if self.contains(tile) and
+                (direction is None or self.board[tile.x][tile.y] == direction)]
 
     def isFinished (self, direction):
         
@@ -133,7 +135,7 @@ class Game (object):
                 
                 done.add(tile)
 
-                for neighbour in self.neighbours(tile):
+                for neighbour in self.neighbours(tile, direction):
                     if neighbour not in done:
                         todo.add(neighbour)
 
@@ -144,21 +146,21 @@ class Game (object):
         loweredge = ' \/ '
         buffer = []
         
-        def toLetter (direction):
-            if direction == HORIZ:
-                return 'H'
-            elif direction == VERTI:
-                return 'V'
-            else:
-                return ' '
+        def cap (d):
+            return 'H' if d == HORIZ else 'V' if d == VERTI else ' '
 
         for y in range(self.rows):
             indent = '  ' * y
             buffer.append(indent + self.cols * upperedge + '\\')
             buffer.append(indent + self.cols * loweredge +  ' \\')
-            row = [' %s ' % toLetter(self.board[x][y]) for x in range(self.cols)]
+            row = [' %s ' % cap(self.board[x][y]) for x in range(self.cols)]
             buffer.append(indent + ' |' + '|'.join(row) + '|')
         
+        # fix first line
+        buffer[0] = '  ' + buffer[0][2:]
+        buffer[1] = '  ' + buffer[1][2:]
+        
+        # fix last line
         indent += '  '
         buffer.append(indent + self.cols * upperedge)
         buffer.append(indent + self.cols * loweredge)
