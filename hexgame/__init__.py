@@ -1,5 +1,7 @@
 
 import random
+import asyncio
+import concurrent
 
 EMPTY = 0
 HORIZ = 1
@@ -17,7 +19,10 @@ class Tile (object):
         self.x = x
         self.y = y
         self.z = x+y
-
+        
+    def __hash__ (self):
+        return (self.z << 16) & (self.y << 8) & (self.x)
+        
     def __eq__ (self, other):
         return self.x == other.x and self.y == other.y
 
@@ -27,13 +32,55 @@ class Tile (object):
 
 class Game (object):
 
-    def __init__ (self, cols=11, rows=11):
+    def __init__ (self, cols=11, rows=11, timeout=0.5, loop=None):
+        self.loop = loop
         self.cols = cols
         self.rows = rows
         self.board = [[0 for row in range(rows)] for col in range(cols)]
+        self.timeout = timeout
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
     def play (self, alice, bob):
-        raise NotImplementedError()
+    
+        # choose initial player
+        player = alice if random.random() > 0.5 else bob
+        direction = HORIZ if random.random() > 0.5 else VERTI
+        
+        # position
+        tile = Tile(0, 0)
+        
+        # play as long as the game is not finished
+        while not self.isFinished(direction):
+            
+            # swap player
+            player = bob if player == alice else alice
+            direction = HORIZ if direction == VERTI else VERTI
+            
+            # let play until timeout
+            task = self.loop.run_in_executor(self.executor, player.play, self.board, direction)
+            future = asyncio.wait_for(task, self.timeout)
+            
+            try:
+                x, y = self.loop.run_until_complete(future)
+            except concurrent.futures.TimeoutError:
+                print(direction, 'lost the game due to timeout')
+                return
+            
+            # debug
+            print('%s : (%d,%d)' % ('horiz' if direction == HORIZ else 'verti', x, y))
+            
+            # validation
+            tile.x = x
+            tile.y = y
+            
+            if not self.isValid(tile):
+                print(direction, 'lost the game due to false play')
+                return
+            
+            # modify the board
+            self.board[x][y] = direction
+        
+        print(direction, 'won the game')
 
     def isValid (self, tile):
         return self.contains(tile) and self.board[tile.x][tile.y] == EMPTY

@@ -11,8 +11,8 @@ class Player (AbstractPlayer):
         x = random.randrange(cols)
         y = random.randrange(rows)
 
-        while board[x, y] != EMPTY:
+        while board[x][y] != EMPTY:
             x = random.randrange(cols)
             y = random.randrange(rows)
-
+            
         return (x, y)
