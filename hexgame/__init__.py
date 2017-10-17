@@ -138,3 +138,29 @@ class Game (object):
                         todo.add(neighbour)
 
         return False
+
+    def __str__ (self):
+        upperedge = '\  /'
+        loweredge = ' \/ '
+        buffer = []
+        
+        def toLetter (direction):
+            if direction == HORIZ:
+                return 'H'
+            elif direction == VERTI:
+                return 'V'
+            else:
+                return ' '
+
+        for y in range(self.rows):
+            indent = '  ' * y
+            buffer.append(indent + self.cols * upperedge + '\\')
+            buffer.append(indent + self.cols * loweredge +  ' \\')
+            row = [' %s ' % toLetter(self.board[x][y]) for x in range(self.cols)]
+            buffer.append(indent + ' |' + '|'.join(row) + '|')
+        
+        indent += '  '
+        buffer.append(indent + self.cols * upperedge)
+        buffer.append(indent + self.cols * loweredge)
+        
+        return '\n'.join(buffer)
