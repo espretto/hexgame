@@ -152,7 +152,7 @@ class Game (object):
         for y in range(self.rows):
             indent = '  ' * y
             buffer.append(indent + self.cols * upperedge + '\\')
-            buffer.append(indent + self.cols * loweredge +  ' \\')
+            buffer.append(indent + self.cols * loweredge + ' \\')
             row = [' %s ' % cap(self.board[x][y]) for x in range(self.cols)]
             buffer.append(indent + ' |' + '|'.join(row) + '|')
         
