@@ -151,25 +151,25 @@ class Game (object):
     def __str__ (self):
         upperedge = '\  /'
         loweredge = ' \/ '
-        buffer = []
+        lines = []
         
         def cap (d):
             return 'H' if d == HORIZ else 'V' if d == VERTI else ' '
 
         for y in range(self.rows):
             indent = '  ' * y
-            buffer.append(indent + self.cols * upperedge + '\\')
-            buffer.append(indent + self.cols * loweredge + ' \\')
-            row = [' %s ' % cap(self.board[x][y]) for x in range(self.cols)]
-            buffer.append(indent + ' |' + '|'.join(row) + '|')
+            lines.append(indent + self.cols*upperedge + '\\')
+            lines.append(indent + self.cols*loweredge + ' \\')
+            row = [cap(self.board[x][y]) for x in range(self.cols)]
+            lines.append(indent + ' |' + ' | '.join(row) + '|')
         
         # fix first line
-        buffer[0] = '  ' + buffer[0][2:]
-        buffer[1] = '  ' + buffer[1][2:]
+        lines[0] = '  ' + lines[0][2:]
+        lines[1] = '  ' + lines[1][2:]
         
         # fix last line
         indent += '  '
-        buffer.append(indent + self.cols * upperedge)
-        buffer.append(indent + self.cols * loweredge)
+        lines.append(indent + self.cols*upperedge)
+        lines.append(indent + self.cols*loweredge)
         
-        return '\n'.join(buffer)
+        return '\n'.join(lines)
