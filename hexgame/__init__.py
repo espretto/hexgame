@@ -22,7 +22,7 @@ class Tile (object):
         self.z = x+y
         
     def __hash__ (self):
-        return (self.z << 16) & (self.y << 8) & (self.x)
+        return self.x & (self.y << 8) & (self.z << 16)
         
     def __eq__ (self, other):
         return self.x == other.x and self.y == other.y
@@ -44,19 +44,13 @@ class Game (object):
 
     def play (self, alice, bob):
     
-        # choose initial player
+        # choose initial player and direction pseudo-randomly
         player = alice if random.random() > 0.5 else bob
         direction = HORIZ if random.random() > 0.5 else VERTI
-        
-        # position
-        tile = Tile(0, 0)
         
         # play as long as the game is not finished
         while not self.isFinished(direction):
             
-            # swap player
-            player = bob if player == alice else alice
-            direction = HORIZ if direction == VERTI else VERTI
             name = 'horiz' if direction == HORIZ else 'verti'
             
             # clone the board for the player to manipulate
@@ -78,25 +72,29 @@ class Game (object):
             print(name, ' (%d,%d)' % (x, y))
             
             # validation
-            tile.x = x
-            tile.y = y
-            
-            if not self.isValid(tile):
+            if not self.isValid(Tile(x, y)):
                 print(name, ' lost the game due to false play')
                 return
             
             # modify the board
             self.board[x][y] = direction
+
+            # swap player for next iteration
+            player = bob if player == alice else alice
+            direction = HORIZ if direction == VERTI else VERTI
         
         print(name, ' won the game')
 
+    def at (self, tile):
+        return self.board[tile.x][tile.y]
+
     def isValid (self, tile):
-        return self.contains(tile) and self.board[tile.x][tile.y] == EMPTY
+        return self.contains(tile) and self.at(tile) == EMPTY
 
     def contains (self, tile):
         return 0 <= tile.x < self.cols and 0 <= tile.y < self.rows
 
-    def neighbours (self, tile, direction=None):
+    def neighbours (self, tile):
 
         neighbours = [
             Tile(tile.x+1, tile.y  ),
@@ -107,8 +105,7 @@ class Game (object):
             Tile(tile.x,   tile.y+1)
         ]
 
-        return [tile for tile in neighbours if self.contains(tile) and
-                (direction is None or self.board[tile.x][tile.y] == direction)]
+        return [tile for tile in neighbours if self.contains(tile)]
 
     def isFinished (self, direction):
         
@@ -142,9 +139,9 @@ class Game (object):
                 
                 done.add(tile)
 
-                for neighbour in self.neighbours(tile, direction):
-                    if neighbour not in done:
-                        todo.add(neighbour)
+                for tile in self.neighbours(tile):
+                    if self.at(tile) == direction and tile not in done:
+                        todo.add(tile)
 
         return False
 
@@ -161,7 +158,7 @@ class Game (object):
             lines.append(indent + self.cols*upperedge + '\\')
             lines.append(indent + self.cols*loweredge + ' \\')
             row = [cap(self.board[x][y]) for x in range(self.cols)]
-            lines.append(indent + ' |' + ' | '.join(row) + '|')
+            lines.append(indent + ' | ' + ' | '.join(row) + ' |')
         
         # fix first line
         lines[0] = '  ' + lines[0][2:]
