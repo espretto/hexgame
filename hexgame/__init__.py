@@ -1,4 +1,5 @@
 
+import copy
 import random
 import asyncio
 import concurrent
@@ -37,6 +38,7 @@ class Game (object):
         self.cols = cols
         self.rows = rows
         self.board = [[0 for row in range(rows)] for col in range(cols)]
+        self.boardcopy = copy.deepcopy(self.board)
         self.timeout = timeout
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
@@ -57,8 +59,13 @@ class Game (object):
             direction = HORIZ if direction == VERTI else VERTI
             name = 'horiz' if direction == HORIZ else 'verti'
             
+            # clone the board for the player to manipulate
+            for x in range(self.cols):
+                for y in range(self.rows):
+                    self.boardcopy[x][y] = self.board[x][y]
+
             # let play until timeout
-            task = self.loop.run_in_executor(self.executor, player.play, self.board, direction)
+            task = self.loop.run_in_executor(self.executor, player.play, self.boardcopy, direction)
             future = asyncio.wait_for(task, self.timeout)
             
             try:
