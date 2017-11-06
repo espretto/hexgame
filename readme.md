@@ -12,8 +12,9 @@ from hexgame import AbstractPlayer, HORIZ, VERTI
 
 class Player (AbstractPlayer):
 
-    name = 'SuperJoueur'
-
+    def __init__(self):
+        self.name = 'SuperJoueur'
+        
     def play(self, board, direction, **options):
         print('Salut! C\'est moi, Bob.')
 ```
