@@ -20,10 +20,10 @@ class Tile (object):
         self.x = x
         self.y = y
         self.z = x+y
-        
+
     def __hash__ (self):
         return self.x & (self.y << 8) & (self.z << 16)
-        
+
     def __eq__ (self, other):
         return self.x == other.x and self.y == other.y
 
@@ -42,17 +42,26 @@ class Game (object):
         self.timeout = timeout
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
+    def reset (self):
+        for x in range(self.cols):
+            for y in range(self.rows):
+                self.board[x][y] = EMPTY
+                self.boardcopy[x][y] = EMPTY
+
     def play (self, alice, bob):
-    
+
         # choose initial player and direction pseudo-randomly
-        player = alice if random.random() > 0.5 else bob
+        player = bob
         direction = HORIZ if random.random() > 0.5 else VERTI
-        
+
         # play as long as the game is not finished
         while not self.isFinished(direction):
-            
+
+            # swap player for next iteration
+            player = bob if player == alice else alice
+            direction = HORIZ if direction == VERTI else VERTI
             name = 'horiz' if direction == HORIZ else 'verti'
-            
+
             # clone the board for the player to manipulate
             for x in range(self.cols):
                 for y in range(self.rows):
@@ -61,29 +70,28 @@ class Game (object):
             # let play until timeout
             task = self.loop.run_in_executor(self.executor, player.play, self.boardcopy, direction)
             future = asyncio.wait_for(task, self.timeout)
-            
+
             try:
                 x, y = self.loop.run_until_complete(future)
             except concurrent.futures.TimeoutError:
-                print(name, ' lost the game due to timeout')
-                return
-            
+                return player, 'timeout'
+
             # debug
-            print(name, ' (%d,%d)' % (x, y))
-            
+            # print(name, ' (%d,%d)' % (x, y))
+
             # validation
             if not self.isValid(Tile(x, y)):
-                print(name, ' lost the game due to false play')
-                return
-            
+                return player, 'false play'
+
             # modify the board
             self.board[x][y] = direction
 
-            # swap player for next iteration
-            player = bob if player == alice else alice
-            direction = HORIZ if direction == VERTI else VERTI
-        
-        print(name, ' won the game')
+        # and the looser is...
+        player = bob if player == alice else alice
+        direction = HORIZ if direction == VERTI else VERTI
+        name = 'horiz' if direction == HORIZ else 'verti'
+
+        return player, 'KO'
 
     def at (self, tile):
         return self.board[tile.x][tile.y]
@@ -108,7 +116,18 @@ class Game (object):
         return [tile for tile in neighbours if self.contains(tile)]
 
     def isFinished (self, direction):
-        
+
+        # stupid test first
+        nempty = 0
+        for x in range(self.cols):
+            for y in range(self.rows):
+                if self.board[x][y] == EMPTY:
+                    nempty += 1
+
+        if nempty == 0:
+            return True
+
+        # dijstra
         if direction == HORIZ:
             x = self.cols-1
             origins = [Tile(0, y) for y in range(self.rows) if self.board[0][y] == direction]
@@ -136,7 +155,7 @@ class Game (object):
 
                 if tile in destins:
                     return True
-                
+
                 done.add(tile)
 
                 for tile in self.neighbours(tile):
@@ -149,7 +168,7 @@ class Game (object):
         upperedge = '\  /'
         loweredge = ' \/ '
         lines = []
-        
+
         def cap (d):
             return 'H' if d == HORIZ else 'V' if d == VERTI else ' '
 
@@ -159,14 +178,14 @@ class Game (object):
             lines.append(indent + self.cols*loweredge + ' \\')
             row = [cap(self.board[x][y]) for x in range(self.cols)]
             lines.append(indent + ' | ' + ' | '.join(row) + ' |')
-        
+
         # fix first line
         lines[0] = '  ' + lines[0][2:]
         lines[1] = '  ' + lines[1][2:]
-        
+
         # fix last line
         indent += '  '
         lines.append(indent + self.cols*upperedge)
         lines.append(indent + self.cols*loweredge)
-        
+
         return '\n'.join(lines)

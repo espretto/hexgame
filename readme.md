@@ -14,9 +14,9 @@ class Player (AbstractPlayer):
 
     def __init__(self):
         self.name = 'SuperJoueur'
-        
+
     def play(self, board, direction, **options):
-        print('Salut! C\'est moi, Bob.')
+        #print('Salut! C\'est moi, Bob.')
 ```
 La méthode `play` recoit au moins deux arguments :
 

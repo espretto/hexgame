@@ -1,7 +1,20 @@
 
-from hexgame import AbstractPlayer
+from hexgame import AbstractPlayer, HORIZ, VERTI, EMPTY
+import random
 
 class Player (AbstractPlayer):
 
+    name = 'Bob'
+
     def play(self, board, direction, **options):
-        print('Salut! C\'est moi, Bob.')
+
+        cols = len(board)
+        rows = len(board[0])
+        x = random.randrange(cols)
+        y = random.randrange(rows)
+
+        while board[x][y] != EMPTY:
+            x = random.randrange(cols)
+            y = random.randrange(rows)
+
+        return (x, y)
